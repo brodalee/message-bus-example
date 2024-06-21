@@ -1,0 +1,32 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    KAFKA_CLUSTER_BOOTSTRAP_ENDPOINT: '%env(resolve:KAFKA_CLUSTER_BOOTSTRAP_ENDPOINT)%'
+    KAFKA_CDC_EVENT_CONSUMER_GROUP_ID: '%env(resolve:KAFKA_CDC_EVENT_CONSUMER_GROUP_ID)%'
+    KAFKA_CLUSTER_API_KEY: '%env(resolve:KAFKA_CLUSTER_API_KEY)%'
+    KAFKA_CLUSTER_API_SECRET: '%env(resolve:KAFKA_CLUSTER_API_SECRET)%'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    Predis\Client:
+        public: true
+        arguments:
+            - '%env(string:REDIS_DSN)%'
+
+    App\RabbitMq\Producer: '@old_sound_rabbit_mq.message_bus_exchange_producer'

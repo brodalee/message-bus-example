@@ -1,0 +1,101 @@
+version: '3.8'
+
+volumes:
+  redisdata:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data-1:
+  kafka-data-2:
+  kafka-data-3:
+
+
+networks:
+  default:
+    driver: bridge
+
+services:
+  phpfpm:
+    build:
+      context: .
+    container_name: ${APP_NAME}_php-fpm
+    env_file:
+      - .env
+    environment:
+      TERM: xterm-color
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - type: "bind"
+        source: "./app/"
+        target: "/project"
+      - type: "bind"
+        source: "../"
+        target: "/workspace"
+    networks:
+      - default
+
+  redis:
+    image: redis:alpine3.20
+    container_name: ${APP_NAME}_redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redisdata:/data
+    networks:
+      - default
+
+  rabbitmq:
+    image: rabbitmq:3.11-management-alpine
+    user: root
+    privileged: true
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      - RABBITMQ_DEFAULT_USER=messageBus
+      - RABBITMQ_DEFAULT_PASS=messageBus
+      - RABBITMQ_ERLANG_COOKIE=InmessageBusItrus7
+      - RABBITMQ_NODENAME=rabbit@localhost
+      - RABBITMQ_DEFAULT_VHOST=message
+    networks:
+      - default
+    cap_add:
+      - SYS_PTRACE
+
+   # KAFKA
+  
+  zookeeper:
+    image: debezium/zookeeper:latest
+    ports:
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/logs
+  
+  kafka:
+    image: debezium/kafka:latest
+    ports:
+      - 9092:9092
+    environment:
+      - BROKER_ID=1
+      - ZOOKEEPER_CONNECT=zookeeper:2181
+      - ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ADVERTISED_LISTENERS:'PLAINTEXT://localhost:9092'
+    links:
+      - zookeeper
+    volumes:
+      - kafka-data-1:/kafka
+
+  akhq:
+    image: tchiotludo/akhq
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "kafka-1:9092"
+    ports:
+      - 8030:8080

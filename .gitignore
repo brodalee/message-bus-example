@@ -1,0 +1,4 @@
+.idea
+app/vendor
+app/public/profile_pictures/*
+node_modules

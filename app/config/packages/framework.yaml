@@ -1,0 +1,27 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    #csrf_protection: true
+
+    # Note that the session will be started ONLY if you read or write from it.
+    session: false
+
+    #esi: true
+    #fragments: true
+
+    http_client:
+        scoped_clients:
+            facebook.client.api:
+                base_uri: 'https://graph.facebook.com/'
+                headers:
+                    'Content-Type': 'application/json'
+            geoapi.gouv.fr.client.api:
+                base_uri: 'https://geo.api.gouv.fr/'
+                headers:
+                    'Content-Type': 'application/json'
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file
